@@ -143,6 +143,24 @@ command_10to16(int argc, char *argv[]) {
 }
 
 int
+command_mateus(int argc, char *argv[]) {
+    int len = 0;
+    uint32_t color = 0;
+    uint8_t color_r, color_g, color_b;
+    while (scanf("%x%n\n", &color, &len) == 1) {
+        if (len != 6) {
+            break;
+        }
+        split_rgb(color, &color_r, &color_g, &color_b);
+        unsigned char r_index = (color_r * 5) / 255;
+        unsigned char g_index = (color_g * 5) / 255;
+        unsigned char b_index = (color_b * 5) / 255;
+        printf("%d\n", 16 + 36 * r_index + 6 * g_index + b_index);
+    }
+    return 0;
+}
+
+int
 command_ladygaga(int argc, char *argv[]) {
     uint32_t i = 0;
     uint8_t r, g, b;
@@ -226,6 +244,7 @@ const struct {
     { "xterm2rgb", command_xterm2rgb },
     { "rgb2xterm", command_rgb2xterm_lib },
     { "rgb2xterm2", command_rgb2xterm_true },
+    { "mateus", command_mateus},
     { "ladygaga", command_ladygaga },
     { "beyonce", command_beyonce } // clang-format on
 };
