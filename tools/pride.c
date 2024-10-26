@@ -44,6 +44,24 @@ uint32_t xterm256_colors[] = {
     0xd0d0d0, 0xdadada, 0xe4e4e4, 0xeeeeee
 };
 
+unsigned char
+new_rgb_to_xterm256(unsigned char color_r,
+                    unsigned char color_g,
+                    unsigned char color_b) {
+
+    if (color_r == color_g && color_g == color_b) {
+        return 232 + (color_r * 23) / 255;
+    }
+
+    unsigned char r_index = (color_r * 5) / 255;
+    unsigned char g_index = (color_g * 5) / 255;
+    unsigned char b_index = (color_b * 5) / 255;
+
+    unsigned char result = 16 + 36 * r_index + 6 * g_index + b_index;
+
+    return result;
+}
+
 uint8_t
 bit_8to3(uint8_t input) {
     uint8_t output = 0;
@@ -85,7 +103,7 @@ join_rgb(uint8_t input_r, uint8_t input_g, uint8_t input_b) {
 }
 
 int
-command_rgb2xterm_lib(int argc, char *argv[]) {
+command_rgb2xterm_lib() {
     int len = 0;
     uint32_t color = 0;
     uint8_t r, g, b;
@@ -100,7 +118,7 @@ command_rgb2xterm_lib(int argc, char *argv[]) {
 }
 
 int
-command_rgb2xterm_true(int argc, char *argv[]) {
+command_rgb2xterm_true() {
     int len = 0;
     uint32_t color = 0;
     while (scanf("%x%n\n", &color, &len) == 1) {
@@ -122,7 +140,7 @@ command_rgb2xterm_true(int argc, char *argv[]) {
 }
 
 int
-command_xterm2rgb(int argc, char *argv[]) {
+command_xterm2rgb() {
     int i = 0;
     while (scanf("%d\n", &i) == 1) {
         if (i < 0 || i > (sizeof(xterm256_colors) / sizeof(*xterm256_colors))) {
@@ -134,7 +152,7 @@ command_xterm2rgb(int argc, char *argv[]) {
 }
 
 int
-command_10to16(int argc, char *argv[]) {
+command_10to16() {
     int i = 0;
     while (scanf("%d\n", &i) == 1) {
         printf("%02x\n", i);
@@ -143,25 +161,22 @@ command_10to16(int argc, char *argv[]) {
 }
 
 int
-command_mateus(int argc, char *argv[]) {
+command_mateus() {
     int len = 0;
     uint32_t color = 0;
-    uint8_t color_r, color_g, color_b;
+    uint8_t r, g, b;
     while (scanf("%x%n\n", &color, &len) == 1) {
         if (len != 6) {
             break;
         }
-        split_rgb(color, &color_r, &color_g, &color_b);
-        unsigned char r_index = (color_r * 5) / 255;
-        unsigned char g_index = (color_g * 5) / 255;
-        unsigned char b_index = (color_b * 5) / 255;
-        printf("%d\n", 16 + 36 * r_index + 6 * g_index + b_index);
+        split_rgb(color, &r, &g, &b);
+        printf("%d\n", new_rgb_to_xterm256(r, g, b));
     }
     return 0;
 }
 
 int
-command_ladygaga(int argc, char *argv[]) {
+command_ladygaga() {
     uint32_t i = 0;
     uint8_t r, g, b;
 
@@ -180,12 +195,12 @@ command_ladygaga(int argc, char *argv[]) {
 }
 
 int
-command_beyonce(int argc, char *argv[]) {
+command_beyonce() {
     return 0;
 }
 
 int
-command_loop_rgb(int argc, char *argv[]) {
+command_loop_rgb() {
     uint16_t i = 0;
     while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
         printf("%06x\n", xterm256_colors[i++]);
@@ -194,7 +209,7 @@ command_loop_rgb(int argc, char *argv[]) {
 }
 
 int
-command_loop_256(int argc, char *argv[]) {
+command_loop_256() {
     uint16_t i = 0;
     while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
         printf("%d\n", i++);
@@ -203,7 +218,7 @@ command_loop_256(int argc, char *argv[]) {
 }
 
 int
-command_b8to3(int argc, char *argv[]) {
+command_b8to3() {
     int len = 0;
     uint32_t color = 0;
     uint8_t r, g, b;
@@ -218,7 +233,7 @@ command_b8to3(int argc, char *argv[]) {
 }
 
 int
-command_b3to8(int argc, char *argv[]) {
+command_b3to8() {
     int len = 0;
     uint32_t color = 0;
     uint8_t r, g, b;
@@ -234,7 +249,7 @@ command_b3to8(int argc, char *argv[]) {
 
 const struct {
     const char *str;
-    int (*func)(int, char *[]);
+    int (*func)(void);
 } command_list[] = {
     { "rgb", command_loop_rgb }, // clang-format off
     { "823", command_b8to3 },
@@ -244,7 +259,7 @@ const struct {
     { "xterm2rgb", command_xterm2rgb },
     { "rgb2xterm", command_rgb2xterm_lib },
     { "rgb2xterm2", command_rgb2xterm_true },
-    { "mateus", command_mateus},
+    { "mateusgpt", command_mateus},
     { "ladygaga", command_ladygaga },
     { "beyonce", command_beyonce } // clang-format on
 };
@@ -263,7 +278,7 @@ main(int argc, char *argv[]) {
 
     while (i < sizeof(command_list) / sizeof(*command_list)) {
         if (strcmp(argv[1], command_list[i].str) == 0) {
-            return command_list[i].func(argc, argv);
+            return command_list[i].func();
         }
         i++;
     }
