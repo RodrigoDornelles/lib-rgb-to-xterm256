@@ -2,10 +2,20 @@ unsigned char
 rgb_to_xterm256(unsigned char color_r,
                 unsigned char color_g,
                 unsigned char color_b) {
+
+    unsigned char c8r = color_r;
+    unsigned char c8g = color_g;
+    unsigned char c8b = color_b;
     unsigned char c3r = 0;
     unsigned char c3g = 0;
     unsigned char c3b = 0;
-    unsigned int c3packed = 0;
+    unsigned int color_id = 0;
+    unsigned char half_color = (c8r >= 0x80 && c8r < 0x87) << 2 |
+                               (c8g >= 0x80 && c8g < 0x87) << 1 |
+                               (c8b >= 0x80 && c8b < 0x87);
+
+    static const unsigned char term_colors[] = { 0x04, 0x02, 0x06,
+                                                 0x01, 0x05, 0x03 };
 
     static const unsigned char xterm256_colors[] = {
         0x00, 0x11, 0x12, 0x13, 0x14, 0x0c, 0x00, 0x00, 0x16, 0x17, 0x18, 0x19,
@@ -47,31 +57,35 @@ rgb_to_xterm256(unsigned char color_r,
         0x00, 0x11, 0x12, 0x13, 0x14, 0x0c, 0x00
     };
 
-    if (color_r > 0) {
+    if (c8r > 0) {
         c3r = 1;
-        while (color_r > 0x5f) {
-            color_r -= 0x28;
+        while (c8r > 0x5f) {
+            c8r -= 0x28;
             c3r += 1;
         }
     }
 
-    if (color_g > 0) {
+    if (c8g > 0) {
         c3g = 1;
-        while (color_g > 0x5f) {
-            color_g -= 0x28;
+        while (c8g > 0x5f) {
+            c8g -= 0x28;
             c3g += 1;
         }
     }
 
-    if (color_b > 0) {
+    if (c8b > 0) {
         c3b = 1;
-        while (color_b > 0x5f) {
-            color_b -= 0x28;
+        while (c8b > 0x5f) {
+            c8b -= 0x28;
             c3b += 1;
         }
     }
 
-    c3packed = (c3r << 6) | (c3g << 3) | c3b;
+    if (half_color && half_color <= 6) {
+        color_id = term_colors[half_color - 1];
+    } else {
+        color_id = xterm256_colors[(c3r << 6) | (c3g << 3) | c3b];
+    }
 
-    return xterm256_colors[c3packed];
+    return color_id;
 }
