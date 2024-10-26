@@ -1,18 +1,22 @@
 unsigned char
-rgb_to_xterm256(unsigned char color_r,
-                unsigned char color_g,
-                unsigned char color_b) {
+rgb_to_xterm256(unsigned char r, unsigned char g, unsigned char b) {
 
-    unsigned char c8r = color_r;
-    unsigned char c8g = color_g;
-    unsigned char c8b = color_b;
-    unsigned char c3r = 0;
-    unsigned char c3g = 0;
-    unsigned char c3b = 0;
     unsigned int color_id = 0;
-    unsigned char half_color = (c8r >= 0x80 && c8r < 0x87) << 2 |
-                               (c8g >= 0x80 && c8g < 0x87) << 1 |
-                               (c8b >= 0x80 && c8b < 0x87);
+    unsigned char half_color = (r >= 0x80 && r < 0x87) << 2 |
+                               (g >= 0x80 && g < 0x87) << 1 |
+                               (b >= 0x80 && b < 0x87);
+
+    static const unsigned char gray_brightness[] = {
+        0x00, 0x08, 0x12, 0x1c, 0x26, 0x30, 0x3a, 0x44, 0x4e, 0x58,
+        0x5f, 0x62, 0x6c, 0x76, 0x80, 0x87, 0x8a, 0x94, 0x9e, 0xa8,
+        0xaf, 0xb2, 0xbc, 0xc0, 0xc6, 0xd0, 0xd7, 0xda, 0xe4, 0xee, 0xff
+    };
+
+    static const unsigned char gray_colors[] = {
+        0x00, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0,
+        0x3b, 0xf1, 0xf2, 0xf3, 0x08, 0x66, 0xf5, 0xf6, 0xf7, 0xf8,
+        0x91, 0xf9, 0xfa, 0x07, 0xfb, 0xfc, 0xbc, 0xfd, 0xfe, 0xff, 0x0f
+    };
 
     static const unsigned char term_colors[] = { 0x04, 0x02, 0x06,
                                                  0x01, 0x05, 0x03 };
@@ -57,33 +61,45 @@ rgb_to_xterm256(unsigned char color_r,
         0x00, 0x11, 0x12, 0x13, 0x14, 0x0c, 0x00
     };
 
-    if (c8r > 0) {
-        c3r = 1;
-        while (c8r > 0x5f) {
-            c8r -= 0x28;
-            c3r += 1;
-        }
-    }
+    if (r == g && g == b) {
+        unsigned char i = 0;
 
-    if (c8g > 0) {
-        c3g = 1;
-        while (c8g > 0x5f) {
-            c8g -= 0x28;
-            c3g += 1;
+        while (gray_brightness[i] < r) {
+            i++;
         }
-    }
 
-    if (c8b > 0) {
-        c3b = 1;
-        while (c8b > 0x5f) {
-            c8b -= 0x28;
-            c3b += 1;
-        }
-    }
-
-    if (half_color && half_color <= 6) {
+        color_id = gray_colors[i];
+    } else if (half_color) {
         color_id = term_colors[half_color - 1];
     } else {
+        unsigned char c3r = 0;
+        unsigned char c3g = 0;
+        unsigned char c3b = 0;
+
+        if (r > 0) {
+            c3r = 1;
+            while (r > 0x5f) {
+                r -= 0x28;
+                c3r += 1;
+            }
+        }
+
+        if (g > 0) {
+            c3g = 1;
+            while (g > 0x5f) {
+                g -= 0x28;
+                c3g += 1;
+            }
+        }
+
+        if (b > 0) {
+            c3b = 1;
+            while (b > 0x5f) {
+                b -= 0x28;
+                c3b += 1;
+            }
+        }
+
         color_id = xterm256_colors[(c3r << 6) | (c3g << 3) | c3b];
     }
 
