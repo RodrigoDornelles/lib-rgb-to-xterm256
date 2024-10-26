@@ -85,6 +85,88 @@ join_rgb(uint8_t input_r, uint8_t input_g, uint8_t input_b) {
 }
 
 int
+command_rgb2xterm_lib(int argc, char *argv[]) {
+    int len = 0;
+    uint32_t color = 0;
+    uint8_t r, g, b;
+    while (scanf("%x%n\n", &color, &len) == 1) {
+        if (len != 6) {
+            break;
+        }
+        split_rgb(color, &r, &g, &b);
+        printf("%d\n", rgb_to_xterm256(r, g, b));
+    }
+    return 0;
+}
+
+int
+command_rgb2xterm_true(int argc, char *argv[]) {
+    int len = 0;
+    uint32_t color = 0;
+    while (scanf("%x%n\n", &color, &len) == 1) {
+        if (len != 6) {
+            break;
+        }
+        uint16_t i = 0;
+        uint8_t id = 0;
+        while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
+            if (xterm256_colors[i] == color) {
+                id = i;
+                break;
+            }
+            i++;
+        }
+        printf("%d\n", id);
+    }
+    return 0;
+}
+
+int
+command_xterm2rgb(int argc, char *argv[]) {
+    int i = 0;
+    while (scanf("%d\n", &i) == 1) {
+        if (i < 0 || i > (sizeof(xterm256_colors) / sizeof(*xterm256_colors))) {
+            break;
+        }
+        printf("%06x\n", xterm256_colors[i]);
+    }
+    return 0;
+}
+
+int
+command_10to16(int argc, char *argv[]) {
+    int i = 0;
+    while (scanf("%d\n", &i) == 1) {
+        printf("%02x\n", i);
+    }
+    return 0;
+}
+
+int
+command_ladygaga(int argc, char *argv[]) {
+    uint32_t i = 0;
+    uint8_t r, g, b;
+
+    while (i < 0x1b7) {
+        b = i & 0x7;
+        g = (i >> 3) & 0x7;
+        r = (i >> 6) & 0x7;
+        r = r ^ 7 ? r : 0;
+        g = g ^ 7 ? g : 0;
+        b = b ^ 7 ? b : 0;
+        printf("%06x\n", join_rgb(r, g, b));
+        i++;
+    }
+
+    return 0;
+}
+
+int
+command_beyonce(int argc, char *argv[]) {
+    return 0;
+}
+
+int
 command_loop_rgb(int argc, char *argv[]) {
     uint16_t i = 0;
     while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
@@ -136,10 +218,16 @@ const struct {
     const char *str;
     int (*func)(int, char *[]);
 } command_list[] = {
-    { "l_rgb", command_loop_rgb },
-    { "l_256", command_loop_256 },
-    { "b8to3", command_b8to3 },
-    { "b3to8", command_b3to8 },
+    { "rgb", command_loop_rgb }, // clang-format off
+    { "823", command_b8to3 },
+    { "328", command_b3to8 },
+    { "10216", command_10to16 },
+    { "xterm", command_loop_256 },
+    { "xterm2rgb", command_xterm2rgb },
+    { "rgb2xterm", command_rgb2xterm_lib },
+    { "rgb2xterm2", command_rgb2xterm_true },
+    { "ladygaga", command_ladygaga },
+    { "beyonce", command_beyonce } // clang-format on
 };
 
 int
