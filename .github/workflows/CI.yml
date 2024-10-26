@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v2
+      - 
+        run: clang-format --dry-run --Werror --verbose rgb_to_xterm256.h
+      - 
+        run: clang-format --dry-run --Werror --verbose tools/pride.c
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v2
+      - 
+        run: make test
