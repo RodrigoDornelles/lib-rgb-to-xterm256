@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -173,6 +174,27 @@ original_to_xterm256(uint32_t color) {
     return 0;
 }
 
+uint32_t perfect_to_xterm256(uint32_t r, uint32_t g, uint32_t b)
+{
+    uint16_t i = 0;
+    uint32_t nestest_color = 0;
+    int64_t nestest_distance = -1;
+    while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
+        uint32_t cur_color = xterm256_colors[i];
+        uint32_t x = (cur_color >> 16) & 0xFF;
+        uint32_t y = (cur_color >> 8) & 0xFF;
+        uint32_t z = cur_color & 0xFF;
+        uint64_t cur_distance = std::sqrt(std::pow(x - r, 2) + std::pow(y - g, 2) + std::pow(z - b, 2));
+        if (nestest_distance == -1 || cur_distance <= nestest_distance) {
+            nestest_distance = cur_distance;
+            nestest_color = i;
+        }
+        i++;
+    }
+
+    return nestest_color;
+}
+
 int
 xterm_to_color() {
     int i = 0;
@@ -254,6 +276,7 @@ static const std::map<std::string, std::function<int()>> commands = {
     { "mateus2xterm", command_conversor(three(new_rgb_to_xterm256), std::hex, std::dec) },
     { "dornelles2xterm", command_conversor(three(old_rgb_to_xterm256), std::hex, std::dec) },
     { "original2xterm", command_conversor(one(original_to_xterm256), std::hex, std::dec) },
+    { "perfect2xterm", command_conversor(three(perfect_to_xterm256), std::hex, std::dec) },
     { "xterm2rgb", command_conversor(one(xterm256_to_rgb), std::dec, std::hex) },
     { "xterm2color", xterm_to_color },
 };
