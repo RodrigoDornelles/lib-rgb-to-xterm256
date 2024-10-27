@@ -84,6 +84,12 @@ static const unsigned char legacy_xterm256_colors_3bits[] = {
     0x00, 0x11, 0x12, 0x13, 0x14, 0x0c, 0x00
 };
 
+static const unsigned char gray_colors[] = {
+        0x00, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0, 0x3b,
+        0xf1, 0xf2, 0xf3, 0x08, 0x66, 0xf5, 0xf6, 0xf7, 0xf8, 0x91, 0xf9,
+        0xfa, 0x07, 0xfb, 0xfc, 0xbc, 0xfd, 0xfe, 0xff, 0x0f
+};
+
 unsigned char
 new_rgb_to_xterm256(unsigned char color_r,
                     unsigned char color_g,
@@ -177,7 +183,7 @@ join_rgb(uint8_t input_r, uint8_t input_g, uint8_t input_b) {
 }
 
 int
-command_rgb2xterm_lib() {
+command_rgb2xterm() {
     int len = 0;
     uint32_t color = 0;
     uint8_t r, g, b;
@@ -192,7 +198,7 @@ command_rgb2xterm_lib() {
 }
 
 int
-command_rgb2xterm_true() {
+command_original() {
     int len = 0;
     uint32_t color = 0;
     while (scanf("%x%n\n", &color, &len) == 1) {
@@ -285,11 +291,16 @@ command_ladygaga() {
 
 int
 command_beyonce() {
+    int i = 0;
+    while (scanf("%d\n", &i) == 1) {
+        printf("\033[48;5;%dm  ", i);
+    }
+    printf("\n\033[0m");
     return 0;
 }
 
 int
-command_loop_rgb() {
+command_range_rgb() {
     uint16_t i = 0;
     while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
         printf("%06x\n", xterm256_colors[i++]);
@@ -298,10 +309,37 @@ command_loop_rgb() {
 }
 
 int
-command_loop_256() {
+command_range_all() {
     uint16_t i = 0;
     while (i < sizeof(xterm256_colors) / sizeof(*xterm256_colors)) {
         printf("%d\n", i++);
+    }
+    return 0;
+}
+
+int
+command_range_term() {
+    uint16_t i = 0;
+    while (i < 16) {
+        printf("%d\n", i++);
+    }
+    return 0;
+}
+
+int
+command_range_xterm() {
+    uint16_t i = 17;
+    while (i < 231) {
+        printf("%d\n", i++);
+    }
+    return 0;
+}
+
+int
+command_range_gray() {
+    uint16_t i = 0;
+    while (i < sizeof(gray_colors) / sizeof(*gray_colors)) {
+        printf("%d\n", gray_colors[i++]);
     }
     return 0;
 }
@@ -340,14 +378,17 @@ const struct {
     const char *str;
     int (*func)(void);
 } command_list[] = {
-    { "rgb", command_loop_rgb }, // clang-format off
+    { "rgb", command_range_rgb }, // clang-format off
     { "823", command_b8to3 },
     { "328", command_b3to8 },
     { "10216", command_10to16 },
-    { "xterm", command_loop_256 },
+    { "all", command_range_all},
+    { "gray", command_range_gray },
+    { "term", command_range_term},
+    { "xterm", command_range_xterm },
     { "xterm2rgb", command_xterm2rgb },
-    { "rgb2xterm", command_rgb2xterm_lib },
-    { "rgb2xterm2", command_rgb2xterm_true },
+    { "rgb2xterm", command_rgb2xterm },
+    { "original", command_original },
     { "dornelles", command_dornelles},
     { "mateusgpt", command_mateus},
     { "ladygaga", command_ladygaga },
