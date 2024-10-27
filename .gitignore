@@ -1,0 +1,10 @@
+*.out
+*.exe
+*.zip
+*.txt
+!LICENSE.txt
+pride
+html/
+latex/
+DS_Store
+Thumbs.db
