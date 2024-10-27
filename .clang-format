@@ -1,6 +1,6 @@
 ---
 BasedOnStyle: Mozilla
-ColumnLimit: 80
+ColumnLimit: 148
 IndentWidth: 4
 UseTab: Never
 ---
