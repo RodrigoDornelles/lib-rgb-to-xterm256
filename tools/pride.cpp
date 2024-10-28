@@ -158,11 +158,10 @@ bit_3to8(uint32_t input) {
 
 uint32_t
 xterm256_to_rgb(uint32_t color_id) {
-    uint32_t i = 0;
-    if (i < 0 || i > (sizeof(xterm256_colors) / sizeof(*xterm256_colors))) {
-        0;
+    if (color_id < 0 || color_id > (sizeof(xterm256_colors) / sizeof(*xterm256_colors))) {
+        return 0;
     }
-    return xterm256_colors[i];
+    return xterm256_colors[color_id];
 }
 
 uint32_t
