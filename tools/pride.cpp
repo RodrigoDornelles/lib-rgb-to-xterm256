@@ -220,7 +220,7 @@ unique(std::istream &in, std::ostream &out) {
             continue;
         }
         lastest = input;
-        out << input << std::endl;
+        out << input << "\n";
     }
 }
 
@@ -273,9 +273,9 @@ command_conversor(std::function<uint32_t(uint32_t, uint32_t, uint32_t, uint32_t)
     };
 }
 
-static const std::map<std::string, std::function<void(std::istream &, std::ostream &)>> commands_list = {
+static const std::map<std::string, std::function<void(std::istream &, std::ostream &)>> commands = {
     { "rgb", command_map(xterm256_colors, sizeof(xterm256_colors), std::hex) },
-    { "full", command_range(0, 0xFFFFFF, 1, std::hex) },
+    { "full", command_range(0, 0xFFFFFF, 0xA, std::hex) },
     { "all", command_range(0, 255, 1, std::dec) },
     { "term", command_range(0, 15, 1, std::dec) },
     { "xterm", command_range(16, 230, 1, std::dec) },
@@ -305,35 +305,23 @@ int
 main(int argc, char *argv[]) {
     if (argc < 2) {
         std::cerr << "command list:";
-        for (const auto &command : commands_list) {
+        for (const auto &command : commands) {
             std::cerr << " " << command.first;
         }
         std::cerr << std::endl;
         return 1;
     }
 
-    std::vector<decltype(commands_list.begin())> commands;
-    std::vector<std::stringstream> pipes(argc - 2);
-    std::vector<std::thread> threads;
-
     for (int i = 1; i < argc; ++i) {
-        auto command = commands_list.find(argv[i]);
-        if (command == commands_list.end()) {
+        static std::vector<std::stringstream> pipes(argc - 2);
+        auto command = commands.find(argv[i]);
+        if (command == commands.end()) {
             std::cerr << "Command not found: " << argv[i] << std::endl;
             return 1;
         }
-        commands.push_back(command);
-    }
-
-    for (size_t i = 0; i < commands.size(); ++i) {
-        auto command = commands[i];
-        std::istream &pipe_in = (i == 0) ? std::cin : pipes[i - 1];
-        std::ostream &pipe_out = (i + 1 == commands.size()) ? std::cout : pipes[i];
-        threads.emplace_back(command->second, std::ref(pipe_in), std::ref(pipe_out));
-    }
-
-    for (auto &thread : threads) {
-        thread.join();
+        std::istream &pipe_in = (i == 1) ? std::cin : pipes[i - 2];
+        std::ostream &pipe_out = (i + 1 == argc) ? std::cout : pipes[i - 1];
+        command->second(pipe_in, pipe_out);
     }
 
     return 0;
