@@ -3,9 +3,12 @@
 #include <iostream>
 #include <map>
 #include <math.h>
+#include <regex>
+#include <sstream>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <thread>
 
 #include "rgb_to_xterm256.h"
 
@@ -174,8 +177,8 @@ original_to_xterm256(uint32_t color) {
     return 0;
 }
 
-uint32_t perfect_to_xterm256(uint32_t r, uint32_t g, uint32_t b)
-{
+uint32_t
+perfect_to_xterm256(uint32_t r, uint32_t g, uint32_t b) {
     uint16_t i = 0;
     uint32_t nestest_color = 0;
     int64_t nestest_distance = -1;
@@ -195,47 +198,64 @@ uint32_t perfect_to_xterm256(uint32_t r, uint32_t g, uint32_t b)
     return nestest_color;
 }
 
-int
-xterm_to_color() {
+void
+xterm_to_color(std::istream &in, std::ostream &out) {
     int i = 0;
-    while (scanf("%d\n", &i) == 1) {
-        printf("\033[48;5;%dm  ", i);
+    while (in >> i) {
+        out << "\033[48;5;" << i << "m  ";
     }
-    printf("\n\033[0m");
-    return 0;
+    out << "\033[0m" << std::endl;
+}
+
+auto
+unique(std::istream &in, std::ostream &out) {
+    std::string input;
+    std::string lastest;
+    std::regex pattern(R"([a-f0-9]{6}|\d+)");
+    while (in >> input) {
+        if (!std::regex_match(input, pattern)) {
+            break;
+        }
+        if (lastest == input) {
+            continue;
+        }
+        lastest = input;
+        out << input << std::endl;
+    }
 }
 
 auto
 command_range(auto start, auto end, auto increment, auto format) {
-    return [start, end, increment, format]() {
+    return [start, end, increment, format](std::istream &in, std::ostream &out) {
         auto i = start;
         while (i <= end) {
-            std::cout << std::setfill('0') << std::setw(lead(format)) << format << i << std::endl;
+            out << std::setfill('0') << std::setw(lead(format)) << format << i << std::endl;
             i += increment;
         }
-        return 0;
     };
 }
 
 auto
 command_map(auto input, auto end, auto format) {
-    return [input, end, format]() {
+    return [input, end, format](std::istream &in, std::ostream &out) {
         auto i = 0;
         while (i < end / sizeof(*input)) {
-            std::cout << std::setfill('0') << std::setw(lead(format)) << format << input[i++] << std::endl;
+            out << std::setfill('0') << std::setw(lead(format)) << format << input[i++] << std::endl;
         }
-        return 0;
     };
 }
 
 auto
 command_conversor(std::function<uint32_t(uint32_t, uint32_t, uint32_t, uint32_t)> func, auto format_in, auto format_out) {
-
-    return [func, format_in, format_out]() {
+    return [func, format_in, format_out](std::istream &in, std::ostream &out) {
+        std::string input;
         uint32_t number, len;
         if (format_in == std::hex) {
             uint8_t r, g, b;
-            while (scanf("%x%n\n", &number, &len) == 1) {
+            while (in >> input) {
+                if (sscanf(input.c_str(), "%x%n\n", &number, &len) != 1) {
+                    break;
+                }
                 if (len != 6) {
                     break;
                 }
@@ -243,18 +263,17 @@ command_conversor(std::function<uint32_t(uint32_t, uint32_t, uint32_t, uint32_t)
                 g = (number >> 8) & 0xFF;
                 b = number & 0xFF;
                 number = func(number, r, g, b);
-                std::cout << std::setfill('0') << std::setw(lead(format_out)) << format_out << number << std::endl;
+                out << std::setfill('0') << std::setw(lead(format_out)) << format_out << number << std::endl;
             }
         } else {
-            while (scanf("%d\n", &number) == 1) {
-                std::cout << std::setfill('0') << std::setw(lead(format_out)) << format_out << func(number, 0, 0, 0) << std::endl;
+            while (in >> number) {
+                out << std::setfill('0') << std::setw(lead(format_out)) << format_out << func(number, 0, 0, 0) << std::endl;
             }
         }
-        return 0;
     };
 }
 
-static const std::map<std::string, std::function<int()>> commands = {
+static const std::map<std::string, std::function<void(std::istream &, std::ostream &)>> commands_list = {
     { "rgb", command_map(xterm256_colors, sizeof(xterm256_colors), std::hex) },
     { "full", command_range(0, 0xFFFFFF, 1, std::hex) },
     { "all", command_range(0, 255, 1, std::dec) },
@@ -279,25 +298,43 @@ static const std::map<std::string, std::function<int()>> commands = {
     { "perfect2xterm", command_conversor(three(perfect_to_xterm256), std::hex, std::dec) },
     { "xterm2rgb", command_conversor(one(xterm256_to_rgb), std::dec, std::hex) },
     { "xterm2color", xterm_to_color },
+    { "unique", unique },
 };
 
 int
 main(int argc, char *argv[]) {
     if (argc < 2) {
         std::cerr << "command list:";
-        for (const auto &command : commands) {
+        for (const auto &command : commands_list) {
             std::cerr << " " << command.first;
         }
         std::cerr << std::endl;
         return 1;
     }
 
-    auto command = commands.find(argv[1]);
+    std::vector<decltype(commands_list.begin())> commands;
+    std::vector<std::stringstream> pipes(argc - 2);
+    std::vector<std::thread> threads;
 
-    if (command == commands.end()) {
-        std::cerr << "command not found: " << argv[1] << std::endl;
-        return 1;
+    for (int i = 1; i < argc; ++i) {
+        auto command = commands_list.find(argv[i]);
+        if (command == commands_list.end()) {
+            std::cerr << "Command not found: " << argv[i] << std::endl;
+            return 1;
+        }
+        commands.push_back(command);
     }
 
-    return command->second();
+    for (size_t i = 0; i < commands.size(); ++i) {
+        auto command = commands[i];
+        std::istream &pipe_in = (i == 0) ? std::cin : pipes[i - 1];
+        std::ostream &pipe_out = (i + 1 == commands.size()) ? std::cout : pipes[i];
+        threads.emplace_back(command->second, std::ref(pipe_in), std::ref(pipe_out));
+    }
+
+    for (auto &thread : threads) {
+        thread.join();
+    }
+
+    return 0;
 }
