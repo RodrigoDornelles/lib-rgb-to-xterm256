@@ -219,7 +219,17 @@ unique(std::istream &in, std::ostream &out) {
             continue;
         }
         lastest = input;
-        out << input << "\n";
+        out << input << std::endl;
+    }
+}
+
+auto
+filter(std::istream &in, std::ostream &out) {
+    uint32_t input;
+    while (in >> input) {
+        if (input) {
+            out << input << std::endl;
+        }
     }
 }
 
@@ -298,6 +308,7 @@ static const std::map<std::string, std::function<void(std::istream &, std::ostre
     { "xterm2rgb", command_conversor(one(xterm256_to_rgb), std::dec, std::hex) },
     { "xterm2color", xterm_to_color },
     { "unique", unique },
+    { "filter", filter },
 };
 
 int
